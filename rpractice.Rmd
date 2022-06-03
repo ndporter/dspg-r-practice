@@ -53,4 +53,243 @@ plot(lifeExp ~ year, data=gap)
 temp <- c(1,2,3) 
 ```
 
+```{r make_cats}
+cats <- data.frame(coat = c("calico","black","tabby"),
+                   weight=c(2.1, 5.0, 3.2),
+                   likes_string = c(1, 0, 1))
+write.csv(x = cats, file = "data/feline-data.csv", row.names=FALSE)
+```
+
+
+
+```{r}
+library(rstudioapi)
+setwd(dirname(getActiveDocumentContext()$path))
+```
+
+```{r read_cats}
+cats2 <- read.csv('data/feline-data.csv', stringsAsFactors = Ts)
+```
+
+Creating vectors and coercing types
+
+```{r}
+my_vector <- vector(mode='character',length=3)
+combine_vector <- c(1,2,"bananas")
+```
+
+change names
+
+```{r}
+names(cats)[3] <- "likes_hunting" 
+```
+
+Add columns and rows to a df
+
+```{r}
+cats <- read.csv('data/feline-data.csv')
+age <- c(2,3,5)
+cats <- cbind(cats,age)
+newRow <- list("tortoiseshell", 3.3, TRUE, 9)
+cats <- rbind(cats,newRow)
+```
+
+CHALLENGE:
+Create a vector called human_age by multiplying cats$age by 7.
+Convert human_age to a factor.
+Convert human_age back to a numeric vector using the as.numeric() function. Now divide it by 7 to get the original ages back. Explain what happened.
+
+```{r}
+human_age <- cats$age * 7 #create human_age
+human_age <- as.factor(human_age) #convert to factor
+human_age <- as.numeric(as.character(human_age)) #convert to numeric w/as.numeric()
+human_age/7 #divide by 7
+```
+
+Remove rows and columns
+
+```{r}
+cats <- read.csv('data/feline-data.csv')
+cats$coat <- as.factor(cats$coat)
+cats <- rbind(cats,c("white",3.4,0,1))
+#remove a row
+cats <- cats[-5,]
+#cats <- na.omit(cats)
+cats[,-4]
+
+drop <- names(cats) %in% c("weight")
+cats[,!drop]
+```
+Insert a code chunk using a keyboard shortcut (`CTRL-ALT-I` _or_ `CMD-OPT-I`)
+
+```{r}
+library(readxl)
+#download at https://github.com/ndporter/dspg-r-2022/raw/gh-pages/data/gapminder_data.xlsx
+gapminder <- read_excel("data/gapminder_data.xlsx")
+#you can use download.file
+
+```
+
+Inspecting a dataframe
+
+```{r}
+summary(gapminder)
+summary(gapminder$lifeExp)
+
+gapminder$country <- factor(gapminder$country)
+gapminder$continent <- factor(gapminder$continent)
+summary(gapminder)
+
+length(gapminder) #ncol(gapminder)
+nrow(gapminder)
+colnames(gapminder)
+
+head(gapminder)
+tail(gapminder)
+gapminder[sample(nrow(gapminder), 10), ]
+gapminder[1:10,2:5]
+```
+## Subsetting Data
+
+```{r}
+x <- c(5.4,6.2,7.1,4.8,7.5)
+names(x) <- c('a','b','c','d','e')
+
+x[c(1,3)] #discrete items
+x[1:3] #slice
+x[c(1,1,3)]
+x[6]#NA - beyond the end
+x[-2]
+x[c(-1,-5)]
+x[-c(1,5)]
+x[-(1:3)]
+x <- x[-4]
+#by name
+x[c("a","c")]
+
+x <- c(5.4,6.2,7.1,4.8,7.5)
+names(x) <- c('a','b','c','d','e')
+x[x>7 & x<7.5] #and
+x[x>7 | x<7.5] #or
+
+x2 <- 1:3
+names(x2) <- c('a','a','a')
+x2['a'] #duplicate names are possible but not advisable
+
+x
+x[! names(x) %in% c("a","c")]
+```
+
+Select southeast Asian countries from gapminder
+
+```{r}
+seAsia <- c("Myanmar", "Thailand", "Cambodia", "Vietnam", "Laos")
+gapminder[which(gapminder$country %in% seAsia),]
+seAsia_gap <- gapminder[gapminder$country %in% seAsia,]
+```
+
+Extract observations from the 1960s
+
+```{r}
+gap_60s <- gapminder[gapminder$year>1959 & gapminder$year<1970,]
+```
+
+**PICTURES!!!!!!!!!**
+
+```{r}
+library("ggplot2")
+ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) + geom_point()
+```
+```{r}
+#this creates axis, not figure
+ggplot(data=gapminder, mapping = aes(x=gdpPercap, y=lifeExp))
+```
+```{r}
+ggplot(data=gapminder, mapping = aes(x=year, y=lifeExp)) +
+  geom_point()
+
+```
+Lines!
+
+```{r}
+ggplot(data=gapminder, mapping = aes(x=year, y=lifeExp, color=continent)) +
+  geom_line()
+```
+LInes that make a little sense
+
+```{r}
+
+ggplot(data=gapminder, mapping = aes(x=year, y=lifeExp, by=country)) +
+  geom_line(mapping = aes(color=continent)) + geom_point(color="yellow")
+```
+
+```{r}
+logged_points <- ggplot(gapminder, mapping= aes(x=gdpPercap, y=lifeExp)) +
+  geom_point()+ scale_x_log10()
+```
+
+```{r}
+logged_points + geom_smooth(method='loess')
+```
+
+```{r}
+americas <- gapminder[gapminder$continent=="Americas",]
+ggplot(data=americas, mapping = aes(x=year, y=lifeExp)) +
+  geom_line() +
+  facet_wrap( ~ country) +
+  theme(axis.text.x = element_text(angle=45))
+
+ggsave(filename='results/lifeExp_americas.png')
+```
+Save Americas!
+
+```{r}
+write.csv(file = 'clean_data/americas_gap.csv', x=americas, row.names=F)
+```
+
+dplyr!
+
+```{r}
+#tried to get mean for africa
+#mean(gapminder[factor(gapminder$continent=="Africa"),"gdpPercap"])
+```
+
+```{r}
+library("dplyr")
+year_country_gdp <- select(gapminder, year, country, gdpPercap)
+str(year_country_gdp)
+smaller_gap <- gapminder %>% select(-continent) %>% rename(gdp_per_capita = gdpPercap)
+```
+```{r}
+y_cntr_gdp_eur <- gapminder %>%
+  filter(continent=="Europe") %>%
+  select(year, country, gdpPercap)
+```
+
+Combine with grouping
+
+```{r}
+gapminder %>% group_by(continent, year) %>% 
+  summarize(mean_gdpPercap = mean(gdpPercap),
+            sd_gdpPercap = sd(gdpPercap),
+            mean_raw_gdp = mean(gdpPercap*pop),
+            tot_raw_gdp = sum(gdpPercap*pop))
+```
+Mutate!
+
+```{r}
+gapminder %>% mutate(gdp_billion = gdpPercap*pop/10^9) %>%
+  group_by(continent, year) %>%
+  summarize(mean_gdp_bill = mean(gdp_billion))
+```
+  
+Comabine with ggplot
+
+```{r}
+gapminder %>%
+  filter(continent=="Americas") %>%
+  ggplot(mapping = aes(x=year, y=lifeExp)) +
+  geom_line() + 
+  facet_wrap( ~ country)
+```
 
